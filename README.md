@@ -3,7 +3,7 @@
 This is a deep learning in AWS Lambda example application. It demonstrates functions deployed as *Image Containers*!
 It can be used as a reference for Lambda Functions based on existing base images.
 
-The base image is built on the Chest X-Ray Binary Classifier [1] developed by Yuxing Tang (yuxing.tang@nih.gov), Imaging Biomarkers and Computer-Aided Diagnosis Laboratory, National Institutes of Health (NIH) Clinical Center. The base image (https://github.com/eoinsha/CADLab/tree/master/CXR-Binary-Classifier) is forked from https://github.com/rsummers11/CADLab.
+The base image is built on the Chest X-Ray Binary Classifier [1] developed by Yuxing Tang (yuxing.tang@nih.gov), Imaging Biomarkers and Computer-Aided Diagnosis Laboratory, National Institutes of Health (NIH) Clinical Center. The base image (https://github.com/eoinsha/CADLab/tree/aws/CXR-Binary-Classifier) is forked from https://github.com/rsummers11/CADLab.
 
 The training and test image data used is the [NIH Chest X-ray Dataset of 14 Common Thorax Disease Categories](https://nihcc.app.box.com/v/ChestXray-NIHCC). [2]
 
