@@ -5,16 +5,8 @@ FROM python:3.8-buster AS build-image
 
 RUN pip install awscli
 
-ARG AWS_ACCESS_KEY_ID
-ARG AWS_SECRET_ACCESS_KEY
-ARG AWS_SESSION_TOKEN
-ARG AWS_PROFILE
-ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-ENV AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
 ENV FUNCTION_DIR=/var/task
 
-RUN apt-get update && apt-get install -y cmake
 RUN mkdir -p /var/task
 WORKDIR /var/task
 RUN pip install awslambdaric --target /var/task

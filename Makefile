@@ -11,15 +11,6 @@ DLQ_ARN=arn:aws:sqs:$(REGION):$(ACCOUNT_ID):cxrPredictionDLQ
 FUNCTION_CONFIG = --environment "Variables={BUCKET_NAME=$(BUCKET_NAME),MODEL_PATH=/src/trained_models_nih}" --function-name $(FUNCTION_NAME) --memory-size 512 --role $(LAMBDA_ROLE_ARN) --timeout $(FUNCTION_TIMEOUT) --dead-letter-config "TargetArn=$(DLQ_ARN)"
 all: test-local
 
-ecr-login-runtimes:
-	aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin 628053151772.dkr.ecr.sa-east-1.amazonaws.com
-
-python-image: ecr-login-runtimes
-	docker pull 628053151772.dkr.ecr.sa-east-1.amazonaws.com/awslambda/python3.8-runtime:beta
-
-nodejs-image: ecr-login-runtimes
-	docker pull 628053151772.dkr.ecr.sa-east-1.amazonaws.com/awslambda/nodejs12.x-runtime:beta
-
 pull: python-image
 
 build:
