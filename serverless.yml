@@ -1,0 +1,121 @@
+service: image-cxr-detection
+
+frameworkVersion: '2'
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+
+custom:
+  jobStreamName: CXRJobStream
+  bucketName: ${env:BUCKET_NAME}
+  pythonRequirements:
+    dockerizePip: true
+    useStaticCache: true
+
+provider:
+  name: aws
+  runtime: python3.7
+  stage: dev
+  region: ${opt:region}
+  stackTags:
+    APP: CXR Prediction with AWS Lambda
+    ORGANIZATION: fourTheorem
+    AUTHOR: eoin.shanaghy@fourtheorem.com
+  environment:
+    LOG_LEVEL: DEBUG
+    POWERTOOLS_LOGGER_LOG_EVENT: true
+
+functions:
+  createJobs:
+    handler: job_handler.handle_event
+    timeout: 600
+    environment:
+      JOB_STREAM_NAME: ${self:custom.jobStreamName}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - kinesis:PutRecord
+          - kinesis:PutRecords
+        Resource: !GetAtt jobStream.Arn
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+          - s3:HeadObject
+        Resource:
+          - arn:aws:s3:::ft-modelling-lbeta/*
+
+  submitter:
+    handler: submission_handler.handle_kinesis_event
+    environment:
+      MODELLING_FUNCTION_NAME: cxr-prediction
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:cxr
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+        Resource:
+          - !GetAtt dlq.Arn
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt jobStream.Arn
+          batchSize: 10
+          startingPosition: LATEST
+          maximumRetryAttempts: 0
+          parallelizationFactor: 10
+          enabled: true
+          destinations:
+            onFailure: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:jobSubmissionDLQ
+
+resources:
+  Resources:
+    jobStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: ${self:custom.jobStreamName}
+        RetentionPeriodHours: 24
+        ShardCount: 5
+
+    dlq:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: jobSubmissionDLQ
+
+    resultsTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: PredictionResults
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+
+
+    kinesisEventSourceMapping:
+      Type: AWS::Lambda::EventSourceMapping
+      Properties:
+        DestinationConfig:
+          OnFailure:
+            Destination: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:cxrPredictionDLQ
+        EventSourceArn: !GetAtt jobStream.Arn
+        FunctionName: cxr-prediction
+        BatchSize: 1
+        MaximumBatchingWindowInSeconds: 1
+        MaximumRetryAttempts: 0
+        ParallelizationFactor: 10
+        StartingPosition: LATEST
+

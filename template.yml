@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CXR Prediction
+Resources:
+  SimpleAppRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: cxr-prediction
+      RepositoryPolicyText: |
+        {
+         "Statement": [
+          {
+           "Effect": "Allow",
+           "Principal": {
+            "Service": "lambda.amazonaws.com"
+           },
+           "Action": [
+            "ecr:BatchGetImage",
+            "ecr:GetDownloadUrlForLayer"
+           ]
+          }
+         ]
+        }
+
+  cxrPredictionHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cxr-prediction-handler-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: cxr-prediction-handler-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:HeadObject
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::ft-cxr-prediction-lbeta/*
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt cxrPredictionDlq.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - arn:aws:dynamodb:sa-east-1:665863320777:table/PredictionResults
+              - Effect: Allow
+                Action:
+                  - kinesis:GetRecords
+                  - kinesis:GetShardIterator
+                  - kinesis:DescribeStream
+                  - kinesis:ListStreams
+                Resource:
+                  - arn:aws:kinesis:sa-east-1:665863320777:stream/CXRJobStream
+
+  cxrPredictionDlq:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: cxrPredictionDLQ
