@@ -21,5 +21,4 @@ var/
 
 *.tar.gz
 
-
 node_modules/

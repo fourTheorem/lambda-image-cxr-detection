@@ -27,6 +27,19 @@ The image data (linked above) should be copied to an S3 bucket in the following 
 In our tests, we used the full set of test and training data (120,000+) images but a subset will do fine.
 
 
+## Build and Deployment
+
+Currently, a Makefile is used to create the ECR repository and publish the container image. It is also used to create the container image-based Lambda function. The Serverless Framework-based stack is used for deployment of the other resources and orchestrating functions.
+
+First, check the `Makefile` and edit the
+1. `export BUCKET_NAME=<your_bucket>`
+2. `npm install`
+3. `make create-stack`
+4. `make push`
+5. `make create-function`
+6. `npm run sls -- deploy --region=<region>`
+
+
 ## Running
 Invoke the `createJobs` Lambda function (Defined in [serverless.yml](./serverless.yml)] with a test input (choose any from [test-events/](./test-events)).
 

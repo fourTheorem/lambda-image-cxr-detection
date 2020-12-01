@@ -17,8 +17,7 @@ ENV FUNCTION_DIR=/var/task
 RUN apt-get update && apt-get install -y cmake
 RUN mkdir -p /var/task
 WORKDIR /var/task
-COPY awslambdaruntimeclient.tar.gz /root
-RUN pip install /root/awslambdaruntimeclient.tar.gz --target /var/task
+RUN pip install awslambdaric --target /var/task
 
 FROM cxr-bin-cls:latest
 COPY src/ /var/task
